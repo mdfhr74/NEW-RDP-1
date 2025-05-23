@@ -1,0 +1,35 @@
+name: Ubuntu XFCE VNC
+
+on: [workflow_dispatch]
+
+jobs:
+  start-desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Set up XFCE and VNC
+        run: |
+          sudo apt update
+          sudo apt install xfce4 xfce4-goodies tightvncserver -y
+          vncserver :1
+          vncserver -kill :1
+          mkdir -p ~/.vnc
+          echo "#!/bin/bash
+          xrdb $HOME/.Xresources
+          startxfce4 &" > ~/.vnc/xstartup
+          chmod +x ~/.vnc/xstartup
+          echo "Vnc12345" | vncpasswd -f > ~/.vnc/passwd
+          chmod 600 ~/.vnc/passwd
+          vncserver :1
+
+      - name: Install Web-based VNC (noVNC)
+        run: |
+          sudo apt install git websockify python3-websockify -y
+          git clone https://github.com/novnc/noVNC.git
+          git clone https://github.com/novnc/websockify noVNC/utils/websockify
+          nohup ./noVNC/utils/launch.sh --vnc localhost:5901 --listen 6080 &
+
+      - name: Anti-idle loop (prevent timeout)
+        run: |
+          while true; do echo "Running..."; sleep 60; done
