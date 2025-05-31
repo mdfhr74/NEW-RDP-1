@@ -19,7 +19,7 @@ jobs:
 
     - name: Download Pinggy
       run: |
-        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/latest/download/pinggy-windows-amd64.exe" -OutFile pinggy.exe
+        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/download/v0.6.0/pinggy-windows-amd64.exe" -OutFile pinggy.exe
 
     - name: Start Pinggy Tunnel (TCP 3389)
       run: Start-Process -NoNewWindow -FilePath ".\pinggy.exe" -ArgumentList "--tcp 3389" -RedirectStandardOutput pinggy.log
@@ -28,11 +28,12 @@ jobs:
       run: |
         Start-Sleep -Seconds 15
         Get-Content pinggy.log | Select-String "tcp://" | Set-Content rdp_address.txt
+        Write-Output "`n🔗 Your RDP Address:"
         Get-Content rdp_address.txt
 
     - name: Prevent Idle Timeout
       run: |
         for ($i = 0; $i -lt 720; $i++) {
-          Write-Output "Keeping alive... $i"
+          Write-Output "⏳ Running... $i"
           Start-Sleep -Seconds 30
         }
