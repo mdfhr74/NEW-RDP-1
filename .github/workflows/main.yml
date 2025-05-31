@@ -1,39 +1,33 @@
-name: Windows RDP via Pinggy.io
+name: Windows RDP with Pinggy
 
-on: [push, workflow_dispatch]
+on: [workflow_dispatch]
 
 jobs:
-  rdp:
+  build:
     runs-on: windows-latest
     timeout-minutes: 360
 
     steps:
-    - name: Set RDP Password
-      run: |
-        net user runneradmin "P@ssw0rd!"
-
-    - name: Enable RDP
-      run: |
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
     - name: Download Pinggy
       run: |
-        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/download/v0.6.0/pinggy-windows-amd64.exe" -OutFile pinggy.exe
+        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/latest/download/pinggy-windows-amd64.exe" -OutFile pinggy.exe
 
-    - name: Start Pinggy Tunnel (TCP 3389)
-      run: Start-Process -NoNewWindow -FilePath ".\pinggy.exe" -ArgumentList "--tcp 3389" -RedirectStandardOutput pinggy.log
-
-    - name: Wait and Show RDP Address
+    - name: Enable RDP & Set Password
       run: |
-        Start-Sleep -Seconds 15
-        Get-Content pinggy.log | Select-String "tcp://" | Set-Content rdp_address.txt
-        Write-Output "`n🔗 Your RDP Address:"
-        Get-Content rdp_address.txt
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+        Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+    - name: Start Pinggy TCP Tunnel
+      run: |
+        Start-Process -NoNewWindow -FilePath "$PWD\pinggy.exe" -ArgumentList "--proto tcp --port 3389 --auth-token $Env:PINGGY_AUTH_TOKEN"
+      env:
+        PINGGY_AUTH_TOKEN: ${{ secrets.PINGGY_AUTH_TOKEN }}
 
     - name: Prevent Idle Timeout
       run: |
         for ($i = 0; $i -lt 720; $i++) {
-          Write-Output "⏳ Running... $i"
+          Write-Output "Keeping alive... $i"
           Start-Sleep -Seconds 30
         }
