@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: Download Pinggy
       run: |
-        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/latest/download/pinggy-windows-amd64.exe" -OutFile pinggy.exe
+        Invoke-WebRequest -Uri "https://github.com/pinggy-io/pinggy/releases/download/v0.1.0/pinggy-windows-amd64.exe" -OutFile pinggy.exe
 
     - name: Enable RDP & Set Password
       run: |
